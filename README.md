@@ -41,7 +41,7 @@ pillow       10.0 or later   （画像を使う場合のみ）
 # Installation
 
 ```bash
-git clone https://github.com/<OWNER>/Intern-Decision-0.8B-ONNX-CPU
+git clone https://github.com/Kazuhito00/Intern-Decision-0.8B-ONNX-CPU
 cd Intern-Decision-0.8B-ONNX-CPU
 
 # 実行時の依存（onnxruntime・numpy・pillow）のみインストール
@@ -49,28 +49,30 @@ uv sync
 ```
 
 # Download Model
-Intern-Decision には公開されている ONNX がありません。書き出した ONNX を[Releases](https://github.com/<OWNER>/Intern-Decision-0.8B-ONNX-CPU/releases)に置いています（リポジトリには含めていません）。<br>
+Intern-Decision には公開されている ONNX がありません。書き出した ONNX を[Releases](https://github.com/Kazuhito00/Intern-Decision-0.8B-ONNX-CPU/releases)に置いています（リポジトリには含めていません）。<br>
 以下のスクリプトで `models/` に取得します。標準ライブラリのHTTPSのみで動き、gitもgit-lfsも不要です。
 ```bash
-uv run download_model.py --repo <OWNER>/Intern-Decision-0.8B-ONNX-CPU
+uv run download_model.py
 ```
-- 既定の系列長 L=384 の分（約 3.4 GB）を取得し、Release の `manifest.json` に書かれた SHA-256 と照合します（不一致ならファイルを削除して停止）
+- **引数なしでは、Release の全ファイル（L=384・512・1024・1280 の全グラフ、画像用、トークナイザ。17 ファイル、約 4.1 GB）を取得します**
+- 取得元は、既定で `Kazuhito00/Intern-Decision-0.8B-ONNX-CPU` の最新の Release です（`--repo OWNER/NAME` か、環境変数 `INTERN_ONNX_REPO` で別のリポジトリにできます）
+- ランタイムの既定の系列長 L=384 の分だけでよいときは `--seq-len 384` を付けます（14 ファイル、約 3.4 GB。下の例）
+- 取得したファイルは、Release の `manifest.json` に書かれた SHA-256 と照合します（不一致ならファイルを削除して停止）
 - GitHub の制限（1ファイル 2 GiB 未満）で分割されたファイルは、取得後に結合して照合します
 - 取得済みなら何もせず、中断した場合は同じコマンドで続きから再開します
-- `INTERN_ONNX_REPO=<OWNER>/Intern-Decision-0.8B-ONNX-CPU` を環境変数に入れておけば、`--repo` は不要です
 
 ```bash
-uv run download_model.py --repo <OWNER>/... --list                       # ファイル一覧
-uv run download_model.py --repo <OWNER>/... --exclude "vision_encoder*"  # テキスト専用（視覚エンコーダを取らない。約 0.4 GB 少ない）
-uv run download_model.py --repo <OWNER>/... --tag v1                     # タグを指定
+uv run download_model.py --list                                          # ファイル一覧
+uv run download_model.py --exclude "vision_encoder*"                  # テキスト専用（視覚エンコーダを取らない。約 0.4 GB 少ない）
+uv run download_model.py --tag v0.0.0                                    # タグを指定（既定は latest）
 ```
 
 Release には L=384（既定）・512・1024・1280 の4つのグラフが入っています（全部で約 4.3 GB）。**重み（`weights.onnx.data*`、約 3.0 GB）は4つで共有しているので、グラフを1つ増やしても約 0.25 GB しか増えません。** 既定の L=384 だけ取るには、次のどちらかを使います（どちらも同じ 14 ファイル、約 3.4 GB になります）。
 ```bash
-uv run download_model.py --repo <OWNER>/... --seq-len 384
-uv run download_model.py --repo <OWNER>/... --exclude "model_L512*" --exclude "model_L1*"
+uv run download_model.py --seq-len 384
+uv run download_model.py --exclude "model_L512*" --exclude "model_L1*"
 # glob で「含める」形で書くなら、共有ファイルも並べます
-uv run download_model.py --repo <OWNER>/... --include "*L384*" --include "weights*" --include "vision*" --include "*.json" --include "hf/*"
+uv run download_model.py --include "*L384*" --include "weights*" --include "vision*" --include "*.json" --include "hf/*"
 ```
 あとで L=512 だけ足すときは `--seq-len 512`（取得済みの重みは再取得しません）。
 
@@ -267,8 +269,12 @@ models/                  # ONNX・トークナイザ・設定（gitignore）
 ```
 
 # Reference
-- [internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B)（元のモデル）
+- [internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B)（元のモデル。Shanghai AI Laboratory）
+- [Qwen/Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B)（元のモデルのベース。Alibaba Cloud）
 
 # License
 Intern-Decision-0.8B-ONNX-CPU is under [Apache-2.0 license](LICENSE).<br>
-モデルの重みは、元のモデル（[internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B)、Apache-2.0。ベースの Qwen3.5 も Apache-2.0）のライセンスに従います。Release には、両方のライセンス文を同梱しています。
+モデルの重みは、元のモデル（[internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B)、Apache-2.0。ベースの Qwen3.5 も Apache-2.0）のライセンスに従います。Release には、両方のライセンス文（`LICENSE`、`LICENSE-QWEN`）を元のまま同梱しています。
+
+## 変換物であることについて
+Release に含まれる ONNX ファイルは、公式には ONNX が公開されていない [internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B)（Shanghai AI Laboratory。Apache-2.0）のチェックポイントを、このリポジトリの `export/export_onnx.py` で ONNX 形式に変換したもの（グラフの書き出し、系列長ごとのグラフ間での重みの共有）です。重みは fp32 のまま書き出しており、元の実装（PyTorch fp32）との判定の一致を確認しています（テキスト 10/10、画像 4/4。確率の差は最大 1.7e-6）。ベースモデルは [Qwen/Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B)（Alibaba Cloud。Apache-2.0）です。元のモデルの提供元およびこの変換物の動作を、提供元は保証していません。

@@ -39,7 +39,7 @@ Optional dependency groups:
 # Installation
 
 ```bash
-git clone https://github.com/<OWNER>/Intern-Decision-0.8B-ONNX-CPU
+git clone https://github.com/Kazuhito00/Intern-Decision-0.8B-ONNX-CPU
 cd Intern-Decision-0.8B-ONNX-CPU
 
 # Run-time dependencies only (onnxruntime, numpy, pillow)
@@ -47,28 +47,30 @@ uv sync
 ```
 
 # Download Model
-Intern-Decision has no published ONNX. The exported ONNX files are on the [Releases](https://github.com/<OWNER>/Intern-Decision-0.8B-ONNX-CPU/releases) page (they are not in the repository).<br>
+Intern-Decision has no published ONNX. The exported ONNX files are on the [Releases](https://github.com/Kazuhito00/Intern-Decision-0.8B-ONNX-CPU/releases) page (they are not in the repository).<br>
 The script below fetches them into `models/`. It uses plain HTTPS from the standard library: no git, no git-lfs.
 ```bash
-uv run download_model.py --repo <OWNER>/Intern-Decision-0.8B-ONNX-CPU
+uv run download_model.py
 ```
-- Fetches the default L=384 bucket (about 3.4 GB) and checks the SHA-256 values listed in the release's `manifest.json` (a mismatch deletes the file and stops)
+- **With no arguments it fetches every file of the release (all four graphs L=384 / 512 / 1024 / 1280, the vision encoder and the tokenizer: 17 files, about 4.1 GB)**
+- It fetches from the latest release of `Kazuhito00/Intern-Decision-0.8B-ONNX-CPU` by default (use `--repo OWNER/NAME` or the environment variable `INTERN_ONNX_REPO` for another repository)
+- Add `--seq-len 384` when only the runtime's default sequence length L=384 is needed (14 files, about 3.4 GB; see below)
+- Every file is checked against the SHA-256 values listed in the release's `manifest.json` (a mismatch deletes the file and stops)
 - Files that were split to stay under GitHub's limit (below 2 GiB per file) are joined after the download and checked as a whole
 - Nothing is fetched again when the files are already there; an interrupted download continues where it stopped
-- Set `INTERN_ONNX_REPO=<OWNER>/Intern-Decision-0.8B-ONNX-CPU` in the environment and `--repo` is not needed
 
 ```bash
-uv run download_model.py --repo <OWNER>/... --list                       # list the files
-uv run download_model.py --repo <OWNER>/... --exclude "vision_encoder*"  # text only (skip the vision encoder, 0.4 GB less)
-uv run download_model.py --repo <OWNER>/... --tag v1                     # pick a tag
+uv run download_model.py --list                                          # list the files
+uv run download_model.py --exclude "vision_encoder*"                  # text only (skip the vision encoder, 0.4 GB less)
+uv run download_model.py --tag v0.0.0                                    # pick a tag (default: latest)
 ```
 
 The release holds four graphs: L=384 (default), 512, 1024 and 1280 (about 4.3 GB in all). **They share one weights file (`weights.onnx.data*`, about 3.0 GB), so each extra bucket adds only its graph (about 0.25 GB).** To fetch just the default L=384, use either form (both give the same 14 files, about 3.4 GB):
 ```bash
-uv run download_model.py --repo <OWNER>/... --seq-len 384
-uv run download_model.py --repo <OWNER>/... --exclude "model_L512*" --exclude "model_L1*"
+uv run download_model.py --seq-len 384
+uv run download_model.py --exclude "model_L512*" --exclude "model_L1*"
 # spelled with --include, the shared files must be listed too
-uv run download_model.py --repo <OWNER>/... --include "*L384*" --include "weights*" --include "vision*" --include "*.json" --include "hf/*"
+uv run download_model.py --include "*L384*" --include "weights*" --include "vision*" --include "*.json" --include "hf/*"
 ```
 To add L=512 later, run it with `--seq-len 512` (weights already on disk are not fetched again).
 
@@ -265,8 +267,12 @@ models/                  # ONNX, tokenizer and config (gitignored)
 ```
 
 # Reference
-- [internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B) (the original model)
+- [internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B) (the original model; Shanghai AI Laboratory)
+- [Qwen/Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B) (the base of the original model; Alibaba Cloud)
 
 # License
 Intern-Decision-0.8B-ONNX-CPU is under [Apache-2.0 license](LICENSE).<br>
-The model weights follow the license of the original model ([internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B), Apache-2.0; the Qwen3.5 base is Apache-2.0 too). Both license texts are included in the release.
+The model weights follow the license of the original model ([internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B), Apache-2.0; the Qwen3.5 base is Apache-2.0 too). Both license texts (`LICENSE`, `LICENSE-QWEN`) are included in the release, unchanged.
+
+## About the converted files
+The ONNX files in the release are a conversion of the checkpoint of [internlm/Intern-Decision-0.8B](https://huggingface.co/internlm/Intern-Decision-0.8B) (Shanghai AI Laboratory; Apache-2.0), for which no ONNX is published, made with this repository's `export/export_onnx.py` (the graph is exported, and the weights are shared between the graphs of different sequence lengths). The weights are exported in fp32, and the decisions were checked against the original implementation (PyTorch fp32): text 10/10, images 4/4, largest probability difference 1.7e-6. The base model is [Qwen/Qwen3.5-0.8B](https://huggingface.co/Qwen/Qwen3.5-0.8B) (Alibaba Cloud; Apache-2.0). The providers of the original model do not endorse this conversion or warrant how it behaves.

@@ -1,15 +1,17 @@
 # -*- coding: utf-8 -*-
 """Download the ONNX model for demo_inference_text.py / demo_inference_image.py from this repository's GitHub release.
 
-    python download_model.py --repo OWNER/Intern-Decision-0.8B-ONNX-CPU            # latest release, SHA-256 checked
-    python download_model.py --repo OWNER/Intern-Decision-0.8B-ONNX-CPU --tag v1
-    python download_model.py --repo OWNER/... --exclude "vision_encoder*"          # text-only use: skip the vision encoder
-    python download_model.py --repo OWNER/... --seq-len 384                        # only the default bucket (graph L=384 + shared weights + vision)
-    python download_model.py --repo OWNER/... --exclude "model_L512*" --exclude "model_L1*"   # the same, spelled with globs
-    python download_model.py --base-url http://127.0.0.1:8000                      # a mirror, or a local release/ output
-    python download_model.py --repo OWNER/... --list
+    python download_model.py                                    # latest release of Kazuhito00/Intern-Decision-0.8B-ONNX-CPU, SHA-256 checked
+    python download_model.py --tag v0.0.0                       # a given release
+    python download_model.py --exclude "vision_encoder*"        # text-only use: skip the vision encoder
+    python download_model.py --seq-len 384                      # only the default bucket (graph L=384 + shared weights + vision)
+    python download_model.py --exclude "model_L512*" --exclude "model_L1*"   # the same, spelled with globs
+    python download_model.py --base-url http://127.0.0.1:8000   # a mirror, or a local release/ output
+    python download_model.py --list
+    python download_model.py --repo OWNER/NAME                  # a fork's release
 
-The repository can also be given once through the environment: ``INTERN_ONNX_REPO=OWNER/NAME``.
+The default repository is ``Kazuhito00/Intern-Decision-0.8B-ONNX-CPU``. Give another one with ``--repo OWNER/NAME`` or through the
+environment: ``INTERN_ONNX_REPO=OWNER/NAME`` (the argument wins over the environment, the environment over the default).
 
 Intern-Decision has no published ONNX. The release holds the graphs exported by export/export_onnx.py; to build them yourself
 from the original checkpoint use ``python export/prepare_model.py`` instead (needs requirements-export.txt).
@@ -36,6 +38,7 @@ import urllib.error
 import urllib.request
 
 ROOT = pathlib.Path(__file__).resolve().parent
+DEFAULT_REPO = "Kazuhito00/Intern-Decision-0.8B-ONNX-CPU"
 USER_AGENT = "intern-decision-onnx-cpu/0.1 (urllib)"
 CHUNK = 1 << 20  # 1 MiB
 
@@ -59,9 +62,7 @@ def _sha256(path: pathlib.Path) -> str:
 def base_url(args) -> str:
     if args.base_url:
         return args.base_url.rstrip("/")
-    repo = args.repo or os.environ.get("INTERN_ONNX_REPO")
-    if not repo:
-        raise SystemExit("give --repo OWNER/NAME (or set INTERN_ONNX_REPO), or --base-url for a mirror")
+    repo = args.repo or os.environ.get("INTERN_ONNX_REPO") or DEFAULT_REPO
     if args.tag == "latest":
         return "https://github.com/%s/releases/latest/download" % repo
     return "https://github.com/%s/releases/download/%s" % (repo, args.tag)
@@ -118,7 +119,8 @@ def fetch(url: str, dest: pathlib.Path, size: int, label: str = "", tries: int =
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    parser.add_argument("--repo", help="GitHub repository that holds the release (OWNER/NAME)")
+    parser.add_argument("--repo", help="GitHub repository that holds the release (OWNER/NAME; default: $INTERN_ONNX_REPO, else %s)"
+                        % DEFAULT_REPO)
     parser.add_argument("--tag", default="latest", help="release tag (default: latest)")
     parser.add_argument("--base-url", help="fetch the assets from this URL instead of a GitHub release (mirror, local server)")
     parser.add_argument("--dest", default=str(ROOT / "models"), help="where the files go (default: models/)")
