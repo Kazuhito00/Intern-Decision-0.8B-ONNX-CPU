@@ -1,0 +1,5 @@
+# Runtime. That is the whole list.
+onnxruntime>=1.20
+numpy>=1.26
+# Only needed when a request carries images:
+pillow>=10.0

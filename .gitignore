@@ -218,3 +218,20 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# --- Intern-Decision-0.8B-ONNX-CPU ---
+# Model weights and exports: fetched (download_model.py) or generated (export/), never committed.
+models/
+# Upstream sources cloned for reference during porting.
+ref/
+# Golden data IS committed (it is the oracle). Derived logits are not.
+artifacts/torch_logits.npz
+artifacts/*.log
+# Pictures the demos draw for themselves.
+artifacts/images/demo_*.png
+# Release staging area (release/make_release.py writes here).
+dist/
+.ruff_cache/
+
+# onnxruntime profiling output (enable_profiling writes these into the working directory; can be hundreds of MB)
+onnxruntime_profile_*.json
